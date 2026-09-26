@@ -26,6 +26,7 @@ services:
         condition: service_healthy
     networks:
       - mycalendar-network
+      - reverse_proxy
 
   postgres:
     image: postgres:16-alpine
@@ -73,3 +74,5 @@ networks:
   mycalendar-network:
     name: mycalendar-network
     driver: bridge
+  reverse_proxy:
+    external: true
