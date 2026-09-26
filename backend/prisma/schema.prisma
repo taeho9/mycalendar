@@ -1,0 +1,311 @@
+// Prisma schema for MyCalendar Collaboration Platform
+// Matches the architectural specification in '캘린더 앱 아키텍처 기술 스택 추천.md'
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// -------------------------------------------------------------
+// 1. User & Team Management
+// -------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  googleSub    String?  @unique @map("google_sub")
+  name         String
+  profileImage String?  @map("profile_image")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  ownedTeams         Team[]               @relation("TeamOwner")
+  teamMemberships    TeamMember[]
+  createdSchedules   Schedule[]           @relation("ScheduleCreator")
+  comments           Comment[]
+  uploadedFiles      Attachment[]
+  googleSyncAccounts GoogleSyncAccount[]
+
+  @@map("users")
+}
+
+model Team {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  ownerId   String   @map("owner_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  owner       User             @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     TeamMember[]
+  invitations TeamInvitation[]
+  schedules   Schedule[]
+
+  @@map("teams")
+}
+
+enum TeamRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model TeamMember {
+  teamId   String   @map("team_id") @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  role     TeamRole @default(MEMBER)
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  // Relations
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@map("team_members")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+model TeamInvitation {
+  id           String           @id @default(uuid()) @db.Uuid
+  teamId       String           @map("team_id") @db.Uuid
+  inviteeEmail String           @map("invitee_email")
+  token        String           @unique
+  status       InvitationStatus @default(PENDING)
+  expiresAt    DateTime         @map("expires_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@map("team_invitations")
+}
+
+// -------------------------------------------------------------
+// 2. M:N Hierarchical Categories
+// -------------------------------------------------------------
+
+enum OwnerType {
+  USER
+  TEAM
+}
+
+model CategoryMain {
+  id        String    @id @default(uuid()) @db.Uuid
+  ownerType OwnerType @default(USER) @map("owner_type")
+  ownerId   String    @map("owner_id") @db.Uuid
+  name      String
+  color     String?   @default("#4285F4")
+  isDefault Boolean   @default(false) @map("is_default")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  subMappings CategoryHierarchyMapping[]
+  schedules   Schedule[]
+
+  @@map("categories_main")
+}
+
+model CategorySub {
+  id        String    @id @default(uuid()) @db.Uuid
+  ownerType OwnerType @default(USER) @map("owner_type")
+  ownerId   String    @map("owner_id") @db.Uuid
+  name      String
+  isDefault Boolean   @default(false) @map("is_default")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  mainMappings CategoryHierarchyMapping[]
+  schedules    Schedule[]
+
+  @@map("categories_sub")
+}
+
+model CategoryHierarchyMapping {
+  mainCategoryId String   @map("main_category_id") @db.Uuid
+  subCategoryId  String   @map("sub_category_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  mainCategory CategoryMain @relation(fields: [mainCategoryId], references: [id], onDelete: Cascade)
+  subCategory  CategorySub  @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+
+  @@id([mainCategoryId, subCategoryId])
+  @@map("category_hierarchy_mapping")
+}
+
+// -------------------------------------------------------------
+// 3. Schedules (SSOT) & Google Calendar Sync Metadata
+// -------------------------------------------------------------
+
+enum ScheduleScope {
+  USER
+  TEAM
+}
+
+enum ScheduleStatus {
+  PLANNED
+  COMPLETED
+}
+
+enum BusyStatus {
+  BUSY
+  FREE
+}
+
+model Schedule {
+  id              String         @id @default(uuid()) @db.Uuid
+  scopeType       ScheduleScope  @default(USER) @map("scope_type")
+  teamId          String?        @map("team_id") @db.Uuid
+  creatorId       String         @map("creator_id") @db.Uuid
+  mainCategoryId  String         @map("main_category_id") @db.Uuid
+  subCategoryId   String         @map("sub_category_id") @db.Uuid
+  title           String
+  status          ScheduleStatus @default(PLANNED)
+  startTime       DateTime       @map("start_time")
+  endTime         DateTime       @map("end_time")
+  isAllDay        Boolean        @default(false) @map("is_all_day")
+  isTask          Boolean        @default(false) @map("is_task")
+  location        String?
+  description     String?
+  colorId         String?        @map("color_id")
+  busyStatus      BusyStatus     @default(BUSY) @map("busy_status")
+  rrule           String?
+  googleEventId   String?        @map("google_event_id")
+  googleAccountId String?        @map("google_account_id") @db.Uuid
+  etag            String?
+  lastSyncedAt    DateTime?      @map("last_synced_at")
+  version         Int            @default(1)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  team          Team?              @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  creator       User               @relation("ScheduleCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  mainCategory  CategoryMain       @relation(fields: [mainCategoryId], references: [id], onDelete: Restrict)
+  subCategory   CategorySub        @relation(fields: [subCategoryId], references: [id], onDelete: Restrict)
+  googleAccount GoogleSyncAccount? @relation(fields: [googleAccountId], references: [id], onDelete: SetNull)
+  attendees     ScheduleAttendee[]
+  reminders     ScheduleReminder[]
+  comments      Comment[]
+
+  @@index([googleEventId])
+  @@index([startTime, endTime])
+  @@index([creatorId])
+  @@index([teamId])
+  @@map("schedules")
+}
+
+enum AttendeeResponseStatus {
+  NEEDS_ACTION
+  ACCEPTED
+  DECLINED
+  TENTATIVE
+}
+
+model ScheduleAttendee {
+  id             String                 @id @default(uuid()) @db.Uuid
+  scheduleId     String                 @map("schedule_id") @db.Uuid
+  email          String
+  displayName    String?                @map("display_name")
+  responseStatus AttendeeResponseStatus @default(NEEDS_ACTION) @map("response_status")
+
+  // Relations
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_attendees")
+}
+
+enum ReminderMethod {
+  POPUP
+  EMAIL
+}
+
+model ScheduleReminder {
+  id         String         @id @default(uuid()) @db.Uuid
+  scheduleId String         @map("schedule_id") @db.Uuid
+  method     ReminderMethod @default(POPUP)
+  minutes    Int            @default(10)
+
+  // Relations
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@map("schedule_reminders")
+}
+
+// -------------------------------------------------------------
+// 4. Collaboration: Comments & Attachments
+// -------------------------------------------------------------
+
+model Comment {
+  id         String   @id @default(uuid()) @db.Uuid
+  scheduleId String   @map("schedule_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  content    String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+enum ParentType {
+  SCHEDULE
+  COMMENT
+}
+
+model Attachment {
+  id           String     @id @default(uuid()) @db.Uuid
+  parentType   ParentType @map("parent_type")
+  parentId     String     @map("parent_id") @db.Uuid
+  uploaderId   String     @map("uploader_id") @db.Uuid
+  fileName     String?    @map("file_name")
+  mimeType     String?    @map("mime_type")
+  fileSize     BigInt?    @map("file_size")
+  storageKey   String?    @map("storage_key")
+  geoLatitude  Float?     @map("geo_latitude")
+  geoLongitude Float?     @map("geo_longitude")
+  locationName String?    @map("location_name")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  // Relations
+  uploader User @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([parentType, parentId])
+  @@map("attachments")
+}
+
+// -------------------------------------------------------------
+// 5. Google Sync Accounts & Credentials
+// -------------------------------------------------------------
+
+model GoogleSyncAccount {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  googleEmail       String    @map("google_email")
+  accessTokenEnc    String?   @map("access_token_enc")
+  refreshTokenEnc   String?   @map("refresh_token_enc")
+  syncToken         String?   @map("sync_token")
+  channelId         String?   @map("channel_id")
+  resourceId        String?   @map("resource_id")
+  channelExpiration DateTime? @map("channel_expiration")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedules Schedule[]
+
+  @@map("google_sync_accounts")
+}
