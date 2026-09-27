@@ -2,10 +2,7 @@ version: '3.8'
 
 services:
   api:
-    image: mycalendar-api:dev
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/taeho9/mycalendar-api:latest
     container_name: mycalendar-api
     restart: unless-stopped
     ports:
