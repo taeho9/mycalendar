@@ -151,6 +151,12 @@ Public 저장소 보안을 위해 아래 민감한 운영 변수를 Portainer �
 | **Categories** | `PUT` | `/api/v1/categories/sub/:id/stages/reorder` | 워크플로우 단계 순서 재정렬 | ⭕ Bearer |
 | **Categories** | `POST` | `/api/v1/categories/mappings` | 대분류-소분류 M:N 결속 연결 | ⭕ Bearer |
 | **Categories** | `DELETE` | `/api/v1/categories/mappings` | 대분류-소분류 M:N 결속 해제 | ⭕ Bearer |
+| **Schedules** | `POST` | `/api/v1/schedules` | 일정 등록 (카테고리/단계 자동 할당, 사전계획 및 사후완료 지원) | ⭕ Bearer |
+| **Schedules** | `GET` | `/api/v1/schedules` | 일정 목록 및 기간(start~end)/카테고리/단계 필터 조회 | ⭕ Bearer |
+| **Schedules** | `GET` | `/api/v1/schedules/:id` | 일정 상세 정보 조회 (카테고리, 단계, 참석자, 알림) | ⭕ Bearer |
+| **Schedules** | `PATCH` | `/api/v1/schedules/:id` | 일정 내용 및 시간 수정 (버전 자동 증가) | ⭕ Bearer |
+| **Schedules** | `PATCH` | `/api/v1/schedules/:id/stage` | 워크플로우 진행 단계 변경 (칸반 드래그앤드롭 전용) | ⭕ Bearer |
+| **Schedules** | `DELETE` | `/api/v1/schedules/:id` | 일정 삭제 (작성자 또는 팀 관리자 권한) | ⭕ Bearer |
 
 ---
 

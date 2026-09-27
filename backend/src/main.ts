@@ -45,6 +45,7 @@ async function bootstrap() {
     .addTag('Auth', 'Google OAuth2 login and authentication endpoints')
     .addTag('Users', 'User profile management endpoints')
     .addTag('Categories', '2-level M:N hierarchical categories and workflow stages')
+    .addTag('Schedules', 'Schedule & task operations with category & workflow stage filters')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
