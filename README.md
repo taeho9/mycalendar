@@ -20,29 +20,52 @@
 
 ## 🌿 브랜치 전략 및 배포 파이프라인 (GitOps CI/CD)
 
-본 프로젝트는 개발 환경과 운영 환경을 완벽하게 분리하여 운영합니다:
+본 프로젝트는 **로컬 개발/검증 환경(WSL2)** 과 **실운영 클라우드 환경(오라클 클라우드 ARM)** 을 완벽하게 분리하여 다음과 같이 운영됩니다:
 
 ```text
-[로컬 PC 개발 (develop 브랜치)]
-  코드 수정 ➔ 로컬 WSL2 Portainer 배포 (로컬 소스코드 자체 빌드) ➔ 기능 테스트
-                         │
-                         ▼ (테스트 완료 후 PR 및 Merge)
-[운영 OCI 배포 (main 브랜치)]
-  main 브랜치 머지 ➔ GitHub Actions (ARM64/AMD64 멀티아키텍처 자동 빌드)
-                         │
-                         ▼ 푸시
-  GitHub Container Registry (ghcr.io/taeho9/mycalendar-api:latest)
-                         │
-                         ▼ 배포 (1초 완료, BuildKit 에러 원천 차단)
-  OCI 서버 Portainer에서 "Update the stack" 클릭 ➔ 즉시 가동 & DB 자동 마이그레이션
+┌────────────────────────────────────────────────────────────────────────┐
+│ 1단계: 로컬 개발 및 테스트 파이프라인 (develop 브랜치)                 │
+├────────────────────────────────────────────────────────────────────────┤
+│ [내 로컬 PC 코딩]                                                     │
+│        │                                                               │
+│        ▼ git push origin develop                                       │
+│ [GitHub develop 브랜치] (※ GitHub Actions는 동작하지 않음)            │
+│        │                                                               │
+│        ▼ Portainer Git Stack 가져오기 (refs/heads/develop)             │
+│ [로컬 PC WSL2에 설치된 Portainer]                                      │
+│   • GitHub에서 develop 브랜치 최신 소스코드 다운로드                   │
+│   • 로컬 Docker 엔진에서 자체 빌드 수행 (build: ./backend)              │
+│   • 로컬 컨테이너 가동 (mycalendar-api:dev) 및 기능 테스트             │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                         (로컬 테스트 및 검증 완료)
+                                    │
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│ 2단계: 오라클 클라우드 운영 배포 파이프라인 (main 브랜치)              │
+├────────────────────────────────────────────────────────────────────────┤
+│ [main 브랜치로 머지 및 푸시]                                           │
+│   git checkout main && git merge develop && git push origin main       │
+│        │                                                               │
+│        ▼ GitHub Actions 트리거 (자동 또는 웹에서 수동 실행)            │
+│ [GitHub Actions 클라우드 러너]                                         │
+│   • OCI ARM 인스턴스 부하 없이 GitHub 클라우드에서 ARM64 이미지 빌드   │
+│   • GitHub Container Registry (ghcr.io/taeho9/mycalendar-api:latest) 푸시│
+│        │                                                               │
+│        ▼ Portainer Git Stack "Update the stack" 클릭                   │
+│ [오라클 클라우드(OCI) ARM 인스턴스에 설치된 Portainer]                  │
+│   • OCI 서버에서 빌드하지 않고, ghcr.io에 빌드된 ARM 이미지를 다운로드 │
+│   • 1초 만에 Deploy 완료 & PostgreSQL 13개 테이블 자동 마이그레이션    │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-| 구분 | **develop 브랜치** (개발용) | **main 브랜치** (운영 Prod용) |
+| 구분 | **develop 브랜치** (로컬 개발/테스트용) | **main 브랜치** (오라클 클라우드 운영용) |
 | :--- | :--- | :--- |
-| **타깃 서버** | 로컬 PC (WSL2 / Docker Desktop) | 오라클 클라우드 (OCI ARM64 VM) |
-| **빌드 주체** | 로컬 포테이너 (`build: ./backend`) | **GitHub Actions** (`ghcr.io` 푸시) |
-| **도커 이미지** | `mycalendar-api:dev` | `ghcr.io/taeho9/mycalendar-api:latest` |
-| **배포 방식** | 로컬 포테이너에서 스택 Deploy | OCI 포테이너에서 사전 빌드된 이미지 배포 |
+| **타깃 서버** | **로컬 PC (Windows WSL2 / Docker Desktop)** | **오라클 클라우드 (OCI ARM64 인스턴스)** |
+| **소스 코드** | GitHub `develop` 브랜치 | GitHub `main` 브랜치 |
+| **빌드 주체** | **로컬 WSL2 포테이너** (`build: ./backend`) | **GitHub Actions** (클라우드 러너) |
+| **도커 이미지** | `mycalendar-api:dev` (로컬 생성) | `ghcr.io/taeho9/mycalendar-api:latest` (ARM64) |
+| **배포 방식** | 로컬 포테이너가 코드를 받아 **직접 빌드 후 배포** | OCI 포테이너가 빌드된 **ARM 이미지를 가져와 배포** |
 
 ---
 
