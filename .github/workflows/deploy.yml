@@ -1,10 +1,10 @@
 name: Build and Push Multi-Arch Docker Image
 
 on:
+  workflow_dispatch: # GitHub 웹에서 [Run workflow] 버튼으로 수동 실행
   push:
     branches:
-      - main
-      - develop
+      - main # main 브랜치 푸시 시 자동 실행 (수동 실행도 항상 가능)
 
 env:
   REGISTRY: ghcr.io
