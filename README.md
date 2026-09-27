@@ -28,7 +28,7 @@ MyCallendar/
 4. **설정값 입력**:
    - **Name**: `mycalendar`
    - **Repository URL**: GitHub 저장소 주소
-   - **Repository reference**: `refs/heads/develop` (개발 브랜치)
+   - **Repository reference**: `refs/heads/main` (운영 배포) 또는 `refs/heads/develop` (개발 배포)
    - **Compose path**: `docker-compose.yml`
    - **Automatic updates**: Webhook 또는 주기적 폴링 활성화 (선택 사항)
 5. **Environment variables (스택 환경변수 설정)**:
