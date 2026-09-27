@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   api:
+    image: mycalendar-api:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
