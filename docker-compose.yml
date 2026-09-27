@@ -3,9 +3,9 @@ version: '3.8'
 services:
   api:
     image: mycalendar-api:latest
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    # build:
+    #   context: ./backend
+    #   dockerfile: Dockerfile
     container_name: mycalendar-api
     restart: unless-stopped
     ports:
