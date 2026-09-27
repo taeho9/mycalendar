@@ -1,7 +1,8 @@
-# Environment variables
-.env
-.env.local
-.env.*.local
+# Environment variables (모든 하위 경로 포함 차단)
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
 
 # Node.js
 node_modules/
@@ -31,13 +32,25 @@ skills-lock.json
 .DS_Store
 Thumbs.db
 
-# Android
+# Android & Mobile Credentials
 android/.gradle/
 android/build/
 android/app/build/
 android/local.properties
 android/.cxx/
 android/*.iml
+*.jks
+*.keystore
+google-services.json
+
+# Secrets, Credentials & Certificates
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+service-account*.json
+credentials.json
 
 # Docker volumes & logs
 *.log

@@ -1,6 +1,9 @@
 # Multi-stage Dockerfile for NestJS backend with Prisma ORM
 FROM node:20-alpine AS builder
 
+# Install tzdata for timezone support
+RUN apk add --no-cache tzdata
+
 WORKDIR /usr/src/app
 
 COPY package*.json ./
@@ -14,6 +17,10 @@ RUN npm run build
 
 # Production Runtime
 FROM node:20-alpine AS runner
+
+# Install tzdata and set timezone
+RUN apk add --no-cache tzdata
+ENV TZ=Asia/Seoul
 
 WORKDIR /usr/src/app
 
