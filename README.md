@@ -124,6 +124,28 @@ Public 저장소 보안을 위해 아래 민감한 운영 변수를 Portainer �
 
 ---
 
+## 📖 API 문서 및 엔드포인트 명세 (Swagger)
+
+본 프로젝트는 NestJS 기반의 대화형 Swagger API 문서를 기본 제공합니다:
+
+* **Swagger UI 접속 주소**:
+  - **운영 환경 (OCI ARM)**: `https://calendar.godlife.io:6690/api/docs`
+  - **로컬 환경 (WSL2 / Dev)**: `http://localhost:3000/api/docs`
+
+### 🔑 주요 핵심 엔드포인트
+
+| 분류 | 메서드 | 엔드포인트 | 설명 | 인증 필요 |
+| :--- | :---: | :--- | :--- | :---: |
+| **System** | `GET` | `/health` | 서버 상태 및 한국 표준시(KST) 타임존 확인 | ❌ |
+| **Auth** | `GET` | `/api/v1/auth/google` | Google OAuth2 동의 화면 URL 생성 (`?redirect=true` 지원) | ❌ |
+| **Auth** | `GET` | `/api/v1/auth/google/callback` | Google 인가 코드 검증, DB Upsert 및 JWT 발급 | ❌ |
+| **Auth** | `GET` | `/api/v1/auth/me` | JWT 기반 현재 로그인 유저 프로필 조회 | ⭕ Bearer |
+| **Users** | `GET` | `/api/v1/users/me` | 내 프로필 정보 조회 | ⭕ Bearer |
+| **Users** | `PATCH` | `/api/v1/users/me` | 내 프로필 정보 (이름 등) 수정 | ⭕ Bearer |
+| **Users** | `GET` | `/api/v1/users/:id` | 특정 유저 정보 조회 | ⭕ Bearer |
+
+---
+
 ## 💻 로컬 개발 환경 실행 (내 PC 직접 실행 시)
 
 ```bash
@@ -134,9 +156,8 @@ docker compose up -d postgres redis
 cd backend
 npm install
 
-# 3. Prisma 마이그레이션 및 시드 데이터 적재
-npx prisma migrate dev
-npm run prisma:seed
+# 3. Prisma 마이그레이션
+npx prisma migrate deploy
 
 # 4. 개발 서버 시작 (핫 리로딩 지원)
 npm run start:dev
