@@ -141,8 +141,16 @@ Public 저장소 보안을 위해 아래 민감한 운영 변수를 Portainer �
 | **Auth** | `GET` | `/api/v1/auth/google/callback` | Google 인가 코드 검증, DB Upsert 및 JWT 발급 | ❌ |
 | **Auth** | `GET` | `/api/v1/auth/me` | JWT 기반 현재 로그인 유저 프로필 조회 | ⭕ Bearer |
 | **Users** | `GET` | `/api/v1/users/me` | 내 프로필 정보 조회 | ⭕ Bearer |
-| **Users** | `PATCH` | `/api/v1/users/me` | 내 프로필 정보 (이름 등) 수정 | ⭕ Bearer |
 | **Users** | `GET` | `/api/v1/users/:id` | 특정 유저 정보 조회 | ⭕ Bearer |
+| **Categories** | `GET` | `/api/v1/categories/tree` | 2단계 계층 트리(대분류 ➔ 소분류 ➔ 진행단계) 통합 조회 | ⭕ Bearer |
+| **Categories** | `POST` | `/api/v1/categories/main` | 대분류(고객사, 부서/업무) 생성 | ⭕ Bearer |
+| **Categories** | `GET` | `/api/v1/categories/main` | 내 대분류 목록 조회 | ⭕ Bearer |
+| **Categories** | `POST` | `/api/v1/categories/sub` | 소분류(프로젝트, 세부업무) 생성 (기간 및 단계 포함) | ⭕ Bearer |
+| **Categories** | `GET` | `/api/v1/categories/sub` | 소분류 및 단계 목록 조회 | ⭕ Bearer |
+| **Categories** | `POST` | `/api/v1/categories/sub/:id/stages` | 소분류에 새로운 워크플로우 진행 단계 추가 | ⭕ Bearer |
+| **Categories** | `PUT` | `/api/v1/categories/sub/:id/stages/reorder` | 워크플로우 단계 순서 재정렬 | ⭕ Bearer |
+| **Categories** | `POST` | `/api/v1/categories/mappings` | 대분류-소분류 M:N 결속 연결 | ⭕ Bearer |
+| **Categories** | `DELETE` | `/api/v1/categories/mappings` | 대분류-소분류 M:N 결속 해제 | ⭕ Bearer |
 
 ---
 
