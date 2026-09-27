@@ -120,14 +120,34 @@ model CategorySub {
   ownerType OwnerType @default(USER) @map("owner_type")
   ownerId   String    @map("owner_id") @db.Uuid
   name      String
+  startDate DateTime  @default(dbgenerated("'0001-01-01 00:00:00'::timestamp")) @map("start_date")
+  endDate   DateTime  @default(dbgenerated("'9999-12-31 23:59:59'::timestamp")) @map("end_date")
   isDefault Boolean   @default(false) @map("is_default")
   createdAt DateTime  @default(now()) @map("created_at")
 
   // Relations
   mainMappings CategoryHierarchyMapping[]
   schedules    Schedule[]
+  stages       CategoryStage[]
 
   @@map("categories_sub")
+}
+
+model CategoryStage {
+  id            String      @id @default(uuid()) @db.Uuid
+  subCategoryId String      @map("sub_category_id") @db.Uuid
+  name          String
+  sequence      Int         @default(1)
+  color         String?     @default("#3B82F6")
+  isDefault     Boolean     @default(false) @map("is_default")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  subCategory CategorySub @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  schedules   Schedule[]
+
+  @@index([subCategoryId, sequence])
+  @@map("category_stages")
 }
 
 model CategoryHierarchyMapping {
@@ -169,6 +189,7 @@ model Schedule {
   creatorId       String         @map("creator_id") @db.Uuid
   mainCategoryId  String         @map("main_category_id") @db.Uuid
   subCategoryId   String         @map("sub_category_id") @db.Uuid
+  stageId         String?        @map("stage_id") @db.Uuid
   title           String
   status          ScheduleStatus @default(PLANNED)
   startTime       DateTime       @map("start_time")
@@ -193,6 +214,7 @@ model Schedule {
   creator       User               @relation("ScheduleCreator", fields: [creatorId], references: [id], onDelete: Cascade)
   mainCategory  CategoryMain       @relation(fields: [mainCategoryId], references: [id], onDelete: Restrict)
   subCategory   CategorySub        @relation(fields: [subCategoryId], references: [id], onDelete: Restrict)
+  stage         CategoryStage?     @relation(fields: [stageId], references: [id], onDelete: SetNull)
   googleAccount GoogleSyncAccount? @relation(fields: [googleAccountId], references: [id], onDelete: SetNull)
   attendees     ScheduleAttendee[]
   reminders     ScheduleReminder[]
@@ -202,6 +224,7 @@ model Schedule {
   @@index([startTime, endTime])
   @@index([creatorId])
   @@index([teamId])
+  @@index([stageId])
   @@map("schedules")
 }
 
